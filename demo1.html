@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - lights - physical lights</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #000;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				color: #ffffff;
+				padding: 5px;
+				font-family: Monospace;
+				font-size: 13px;
+				text-align: center;
+			}
+
+			a {
+				color: #ff0080;
+				text-decoration: none;
+			}
+
+			a:hover {
+				color: #0080ff;
+			}
+			.btnOverlayLeft {
+				position: absolute;
+    		bottom: 10px;
+			}
+			.btnOverlayRight {
+				position: absolute;
+    		bottom: 10px;
+    		right: 10px
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<button id="goFS" class="btnOverlayLeft">Go fullscreen</button>
+		<button id="startVR" class="btnOverlayRight">Start VR!</button>
+		<script>
+		  var goFS = document.getElementById("goFS");
+		  goFS.addEventListener("click", function() {
+		      document.body.requestFullscreen();
+		  }, false);
+		</script>
+		
+    <script src="js/webvr-polyfill.js"></script>
+		<script src="js/three.min.js"></script>
+    <script src="js/VRControls.js"></script>
+		<!-- <script src="js/stats.min.js"></script> -->
+		<script src="js/dat.gui.min.js"></script>
+		<!-- <script src="js/OrbitControls.js"></script> -->
+		<script src="js/Detector.js"></script>
+		<!-- <script src="js/OBJLoader.js"></script> -->
+		<!-- <script src="js/ColladaLoader2.js"></script> -->
+		<script src="js/VREffect.js"></script>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var camera, scene, renderer,
+			bulbLight1, bulbLight2, bulbMat, ambientLight,
+			object, loader, stats, controls, effect;
+			var ballMat, cubeMat, floorMat;
+			var rectLight, rectLightHelper;
+			var dae;
+
+			var vrDisplay;
+
+			// ref for lumens: http://www.power-sure.com/lumens.htm
+			var bulbLuminousPowers = {
+				"110000 lm (1000W)": 110000,
+				"7000 lm (500W)": 7000,
+				"3500 lm (300W)": 3500,
+				"1700 lm (100W)": 1700,
+				"800 lm (60W)": 800,
+				"400 lm (40W)": 400,
+				"180 lm (25W)": 180,
+				"20 lm (4W)": 20,
+				"Off": 0
+			};
+
+			// ref for solar irradiances: https://en.wikipedia.org/wiki/Lux
+			var hemiLuminousIrradiances = {
+				"0.0001 lx (Moonless Night)": 0.0001,
+				"0.002 lx (Night Airglow)": 0.002,
+				"0.5 lx (Full Moon)": 0.5,
+				"3.4 lx (City Twilight)": 3.4,
+				"50 lx (Living Room)": 50,
+				"100 lx (Very Overcast)": 100,
+				"350 lx (Office Room)": 350,
+				"400 lx (Sunrise/Sunset)": 400,
+				"1000 lx (Overcast)": 1000,
+				"18000 lx (Daylight)": 18000,
+				"50000 lx (Direct Sun)": 50000
+			};
+
+			var params = {
+				shadows: true,
+				exposure: 0.68,
+				bulbPower: Object.keys( bulbLuminousPowers )[ 2 ],
+				hemiIrradiance: Object.keys( hemiLuminousIrradiances )[0]
+			};
+
+
+			var clock = new THREE.Clock();
+
+			init();
+			animate();
+
+
+
+			function init() {
+
+				var container = document.getElementById( 'container' );
+
+				
+				// stats = new Stats();
+				// container.appendChild( stats.dom );
+
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.x = -4;
+				camera.position.z = 4;
+				camera.position.y = 2;
+
+				scene = new THREE.Scene();
+
+				var ambient = new THREE.AmbientLight( 0x444444, 5 );
+				scene.add( ambient );
+				// var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+				// directionalLight.position.set( 0, 0, 1 ).normalize();
+				// scene.add( directionalLight );
+
+				var bulbGeometry = new THREE.SphereGeometry( 0.02, 16, 8 );
+				var bulbBoxGeometry = new THREE.BoxGeometry( 8, 0.5, 0.002 );
+				bulbLight1 = new THREE.PointLight( 0xffee88, 1, 100, 2 );
+
+				bulbMat = new THREE.MeshStandardMaterial( {
+					emissive: 0xffffee,
+					emissiveIntensity: 1,
+					color: 0x000000
+				});
+				bulbLight1.add( new THREE.Mesh( bulbBoxGeometry, bulbMat ) );
+				bulbLight1.position.set( 0, 4.5, -10 );
+				bulbLight1.castShadow = true;
+				scene.add( bulbLight1 );
+
+				bulbLight2 = new THREE.PointLight( 0xffee88, 1, 100, 2 );
+
+				bulbLight2.add( new THREE.Mesh( bulbBoxGeometry, bulbMat ) );
+				bulbLight2.position.set( 0, 4.5, 10 );
+				bulbLight2.castShadow = true;
+				// bulbLight2.rotation.y = Math.PI / 2.0;
+
+				scene.add( bulbLight2 );
+
+
+
+				hemiLight = new THREE.HemisphereLight( 0xddeeff, 0x0f0e0d, 0.02 );
+				scene.add( hemiLight );
+
+				floorMat = new THREE.MeshStandardMaterial( {
+					roughness: 0.8,
+					color: 0xffffff,
+					metalness: 0.2,
+					bumpScale: 0.0005
+				});
+
+				// var diffuseColor = new THREE.Color().setHSL( alpha, 0.5, 0.5 );
+				var diffuseColor = new THREE.Color().setHex( 0x3498db );
+
+				wallMat1 = new THREE.MeshPhysicalMaterial( {
+					// roughness: 0.8,
+					color: diffuseColor,
+					// metalness: 0.2,
+					// bumpScale: 0.0005
+				});
+
+				wallMat2 = new THREE.MeshPhongMaterial( {
+					// roughness: 0.8,
+					color: new THREE.Color().setHex( 0xf1c40f ),
+					// metalness: 0.2,
+					// bumpScale: 0.0005
+				});
+
+				wallMat3 = new THREE.MeshPhongMaterial( {
+					// roughness: 0.8,
+					color: new THREE.Color().setHex( 0xe67e22 ),
+					// metalness: 0.2,
+					// bumpScale: 0.0005
+				});
+
+				wallMat4 = new THREE.MeshPhongMaterial( {
+					// roughness: 0.8,
+					color: new THREE.Color().setHex( 0x3498db ),
+					// metalness: 0.2,
+					// bumpScale: 0.0005
+				});
+
+				ceilingMat = new THREE.MeshPhongMaterial( {
+					roughness: 0.8,
+					color: new THREE.Color().setHex( 0xecf0f1 ),
+					// metalness: 0.2,
+					// bumpScale: 0.0005
+				});
+
+				var textureLoader = new THREE.TextureLoader();
+				textureLoader.load( "textures/hardwood2_diffuse.jpg", function( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 10, 24 );
+					floorMat.map = map;
+					floorMat.needsUpdate = true;
+				} );
+				textureLoader.load( "textures/hardwood2_bump.jpg", function( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 10, 24 );
+					floorMat.bumpMap = map;
+					floorMat.needsUpdate = true;
+				} );
+				textureLoader.load( "textures/hardwood2_roughness.jpg", function( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 10, 24 );
+					floorMat.roughnessMap = map;
+					floorMat.needsUpdate = true;
+				} );
+
+				
+
+				var floorGeometry = new THREE.PlaneBufferGeometry( 20, 20 );
+				var floorMesh = new THREE.Mesh( floorGeometry, floorMat );
+				floorMesh.receiveShadow = true;
+				floorMesh.position.set( 0, -5, 0);
+				floorMesh.rotation.x = -Math.PI / 2.0;
+				scene.add( floorMesh );
+
+				var ceilingGeometry = new THREE.PlaneBufferGeometry( 20, 20 );
+				var ceilingMesh = new THREE.Mesh( ceilingGeometry, ceilingMat );
+				ceilingMesh.receiveShadow = true;
+				ceilingMesh.position.set( 0, 5, 0);
+				ceilingMesh.rotation.x = Math.PI / 2.0;
+				scene.add( ceilingMesh );
+
+
+				var wallGeometry = new THREE.PlaneBufferGeometry( 20, 10);
+				var wallMesh1 = new THREE.Mesh( wallGeometry, wallMat1 );
+				wallMesh1.receiveShadow = true;
+				wallMesh1.position.set( 0, 0, -10 );
+				// wallMesh1.rotation.x = -Math.PI / 2.0;
+				// wallMesh1.rotation.y = -Math.PI / 2.0;
+				// wallMesh1.rotation.z = -Math.PI / 2.0;
+				scene.add( wallMesh1 );
+
+				var wallGeometry = new THREE.PlaneBufferGeometry( 20, 10 );
+				var wallMesh2 = new THREE.Mesh( wallGeometry, wallMat2 );
+				wallMesh2.receiveShadow = true;
+				wallMesh2.position.set( 10, 0, 0 );
+				// wallMesh2.rotation.x = -Math.PI / 2.0;
+				wallMesh2.rotation.y = -Math.PI / 2.0;
+				// wallMesh2.rotation.z = -Math.PI / 2.0;
+				scene.add( wallMesh2 );
+
+				var wallGeometry = new THREE.PlaneBufferGeometry( 20, 10 );
+				var wallMesh3 = new THREE.Mesh( wallGeometry, wallMat3 );
+				wallMesh3.receiveShadow = true;
+				wallMesh3.position.set( 0, 0, 10 );
+				// wallMesh3.rotation.x = -Math.PI / 2.0;
+				wallMesh3.rotation.y = -Math.PI;
+				// wallMesh3.rotation.z = -Math.PI / 2.0;
+				scene.add( wallMesh3 );
+				
+				var wallGeometry = new THREE.PlaneBufferGeometry( 20, 10 );
+				var wallMesh4 = new THREE.Mesh( wallGeometry, wallMat4 );
+				wallMesh4.receiveShadow = true;
+				wallMesh4.position.set( -10, 0, 0 );
+				// wallMesh4.rotation.x = -Math.PI / 2.0;
+				wallMesh4.rotation.y = Math.PI / 2.0;
+				// wallMesh4.rotation.z = -Math.PI / 2.0;
+				scene.add( wallMesh4 );
+
+
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.physicallyCorrectLights = true;
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+				renderer.shadowMap.enabled = true;
+				renderer.toneMapping = THREE.ReinhardToneMapping;
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				navigator.getVRDisplays().then(function(displays) {
+					console.log(displays);
+			    if (displays.length > 0) {
+			      vrDisplay = displays[0];
+			    }  
+				});
+				
+				document.querySelector('#startVR').addEventListener('click', function() {
+					console.log(renderer.domElement)
+				  vrDisplay.requestPresent([{source: renderer.domElement}]);
+				});
+
+				// var controls = new THREE.OrbitControls( camera, renderer.domElement );
+				// controls.target.set( 0, 0, 0 );
+				// controls.update();
+
+				controls = new THREE.VRControls( camera );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+
+				var gui = new dat.GUI();
+
+				gui.add( params, 'hemiIrradiance', Object.keys( hemiLuminousIrradiances ) );
+				gui.add( params, 'bulbPower', Object.keys( bulbLuminousPowers ) );
+				gui.add( params, 'exposure', 0, 1 );
+				gui.add( params, 'shadows' );
+				gui.open();
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+				controls.update();
+
+			}
+
+			var previousShadowMap = false;
+
+			function render() {
+
+				renderer.toneMappingExposure = Math.pow( params.exposure, 5.0 ); // to allow for very bright scenes.
+				renderer.shadowMap.enabled = params.shadows;
+
+				effect = new THREE.VREffect(renderer);
+				effect.setSize(window.innerWidth, window.innerHeight);
+
+
+				bulbLight1.castShadow = params.shadows;
+				bulbLight2.castShadow = params.shadows;
+				// rectLight.castShadow = params.shadows;
+				if( params.shadows !== previousShadowMap ) {
+					// ballMat.needsUpdate = true;
+					// cubeMat.needsUpdate = true;
+					floorMat.needsUpdate = true;
+					previousShadowMap = params.shadows;
+				}
+				bulbLight1.power = bulbLuminousPowers[ params.bulbPower ];
+				bulbLight2.power = bulbLuminousPowers[ params.bulbPower ];
+				bulbMat.emissiveIntensity = bulbLight1.intensity / Math.pow( 0.02, 2.0 ); // convert from intensity to irradiance at bulb surface
+				bulbMat.emissiveIntensity = bulbLight2.intensity / Math.pow( 0.02, 2.0 ); // convert from intensity to irradiance at bulb surface
+
+				hemiLight.intensity = hemiLuminousIrradiances[ params.hemiIrradiance ];
+				var time = Date.now() * 0.0005;
+				var delta = clock.getDelta();
+
+
+				// renderer.render( scene, camera );
+				effect.render( scene, camera );
+
+				// stats.update();
+
+			}
+
+		</script>
+	</body>
+</html>
