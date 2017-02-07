@@ -267,15 +267,15 @@
 				var objectLoader = new THREE.ObjectLoader();
 				objectLoader.load("models/json/chair.json", function ( chair ) {
 					chair.scale.x = chair.scale.y = chair.scale.z = 0.1;
-				 	var chair2 = chair.clone();
+				 	// var chair2 = chair.clone();
 					chair.position.set(12, -7.5, -6);
 					chair.rotation.y = 100 * Math.PI / 180;
 					// chair.rotation.y = Math.PI / 2;
 				 	scene.add( chair );
-				 	chair2.position.set(12, -7.5, 6);
-					chair2.rotation.y = 50 * Math.PI / 180;
-					// chair2.rotation.y = Math.PI / 2;
-				 	scene.add( chair2 );
+				 // 	chair2.position.set(12, -7.5, 6);
+					// chair2.rotation.y = 50 * Math.PI / 180;
+					// // chair2.rotation.y = Math.PI / 2;
+				 // 	scene.add( chair2 );
 				} );
 
 			}
