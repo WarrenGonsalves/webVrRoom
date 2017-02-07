@@ -66,9 +66,10 @@
 				// Create a scene, camera and a renderer
 			    scene = new THREE.Scene();
 			    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
-			    renderer = new THREE.WebGLRenderer();
+			    renderer = new THREE.WebGLRenderer({ antialias: true });
 			    renderer.physicallyCorrectLights = true;
 					renderer.gammaInput = true;
+					// renderer.antialias = true;
 					renderer.gammaOutput = true;
 					renderer.shadowMap.enabled = true;
 					renderer.toneMapping = THREE.ReinhardToneMapping;
@@ -196,52 +197,52 @@
 
 				
 
-				var floorGeometry = new THREE.PlaneBufferGeometry( 30, 30 );
+				var floorGeometry = new THREE.PlaneBufferGeometry( 40, 40 );
 				var floorMesh = new THREE.Mesh( floorGeometry, floorMat );
 				floorMesh.receiveShadow = true;
-				floorMesh.position.set( 0, -5, 0);
+				floorMesh.position.set( 0, -7.5, 0);
 				floorMesh.rotation.x = -Math.PI / 2.0;
 				scene.add( floorMesh );
 
-				var ceilingGeometry = new THREE.PlaneBufferGeometry( 30, 30 );
+				var ceilingGeometry = new THREE.PlaneBufferGeometry( 40, 40 );
 				var ceilingMesh = new THREE.Mesh( ceilingGeometry, ceilingMat );
 				ceilingMesh.receiveShadow = true;
-				ceilingMesh.position.set( 0, 5, 0);
+				ceilingMesh.position.set( 0, 7.5, 0);
 				ceilingMesh.rotation.x = Math.PI / 2.0;
 				scene.add( ceilingMesh );
 
 
-				var wallGeometry = new THREE.PlaneBufferGeometry( 30, 10);
+				var wallGeometry = new THREE.PlaneBufferGeometry( 40, 15);
 				var wallMesh1 = new THREE.Mesh( wallGeometry, wallFront );
 				wallMesh1.receiveShadow = true;
-				wallMesh1.position.set( 0, 0, -15 );
+				wallMesh1.position.set( 0, 0, -20 );
 				// wallMesh1.rotation.x = -Math.PI / 2.0;
 				// wallMesh1.rotation.y = -Math.PI / 2.0;
 				// wallMesh1.rotation.z = -Math.PI / 2.0;
 				scene.add( wallMesh1 );
 
-				var wallGeometry = new THREE.PlaneBufferGeometry( 30, 10 );
+				var wallGeometry = new THREE.PlaneBufferGeometry( 40, 15 );
 				var wallMesh2 = new THREE.Mesh( wallGeometry, wallRight );
 				wallMesh2.receiveShadow = true;
-				wallMesh2.position.set( 15, 0, 0 );
+				wallMesh2.position.set( 20, 0, 0 );
 				// wallMesh2.rotation.x = -Math.PI / 2.0;
 				wallMesh2.rotation.y = -Math.PI / 2.0;
 				// wallMesh2.rotation.z = -Math.PI / 2.0;
 				scene.add( wallMesh2 );
 
-				var wallGeometry = new THREE.PlaneBufferGeometry( 30, 10 );
+				var wallGeometry = new THREE.PlaneBufferGeometry( 40, 15 );
 				var wallMesh3 = new THREE.Mesh( wallGeometry, wallBack );
 				wallMesh3.receiveShadow = true;
-				wallMesh3.position.set( 0, 0, 15 );
+				wallMesh3.position.set( 0, 0, 20 );
 				// wallMesh3.rotation.x = -Math.PI / 2.0;
 				wallMesh3.rotation.y = -Math.PI;
 				// wallMesh3.rotation.z = -Math.PI / 2.0;
 				scene.add( wallMesh3 );
 				
-				var wallGeometry = new THREE.PlaneBufferGeometry( 30, 10 );
+				var wallGeometry = new THREE.PlaneBufferGeometry( 40, 15 );
 				var wallMesh4 = new THREE.Mesh( wallGeometry, wallLeft );
 				wallMesh4.receiveShadow = true;
-				wallMesh4.position.set( -15, 0, 0 );
+				wallMesh4.position.set( -20, 0, 0 );
 				// wallMesh4.rotation.x = -Math.PI / 2.0;
 				wallMesh4.rotation.y = Math.PI / 2.0;
 				// wallMesh4.rotation.z = -Math.PI / 2.0;
